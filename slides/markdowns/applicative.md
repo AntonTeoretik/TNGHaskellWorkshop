@@ -117,6 +117,27 @@ p = Person "Harry " "Potter"
 "Harry Potter"
 ```
 
+---
+
+### Applicative laws
+
+```Haskell
+-- Identity
+ pure id <*> v = v
+```
+```Haskell
+-- Composition
+ pure (.) <*> u <*> v <*> w = u <*> (v <*> w)
+```
+```Haskell
+-- Homomorphism
+ pure f <*> pure x = pure (f x)
+```
+```Haskell
+-- Interchange
+ u <*> pure y = pure ($ y) <*> u
+```
+
 
 
 
