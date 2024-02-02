@@ -195,3 +195,68 @@ instance Eq Bool where
 * No need to implement all functions if they have default implementations
 * `MINIMAL` is pragma
 
+---
+
+## Some important type classes
+
+---
+
+### Monoid
+```Haskell
+class Semigroup a where
+  (<>) :: a -> a -> a
+
+class Semigroup a => Monoid a where
+  mempty :: a
+  mappend :: a -> a -> a
+  mconcat :: [a] -> a
+  {-# MINIMAL mempty | mconcat #-}
+  
+-- (<>) = mappend
+```
+Axioms
+```Haskell
+1.  x <> mempty = x
+2.  mempty <> x = x
+3.  x <> (y <> z) = (x <> y) <> z
+```
+
+---
+### Examples
+
+```Haskell
+instance Monoid () where
+  mempty   = ()
+  () <> () = ()
+```
+```Haskell
+instance Monoid [a] where
+  mempty  = []
+  mappend = (++)
+```
+```Haskell
+instance Semigroup a => Monoid (Maybe a) where
+  mempty = Nothing
+  (Just x) <> (Just y) = Just (x <> y)
+  x <> Nothing = x
+```
+```Haskell
+instance Monoid b => Monoid (a -> b) where
+  mempty :: a -> b
+  mempty _ = mempty
+  
+  (<>) :: (a -> b) -> (a -> b) -> (a -> b)
+  f <> g = \a -> f a <> g a
+```
+---
+### `a -> a` is a monoid
+```Haskell
+instance Monoid (a -> a) where
+  mempty = id
+  (<>) = (.)
+```
+actually is in wrapper: `End`
+```Haskell
+newtype Endo a = Endo { appEndo :: a -> a }
+```
+
