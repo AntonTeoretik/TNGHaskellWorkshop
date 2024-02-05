@@ -255,8 +255,128 @@ instance Monoid (a -> a) where
   mempty = id
   (<>) = (.)
 ```
-actually is in wrapper: `End`
+needs wrapper: `End`
 ```Haskell
 newtype Endo a = Endo { appEndo :: a -> a }
 ```
+
+---
+## Foldable
+
+Allows to "fold" the whole structure into one element with given binary operation
+```Haskell
+class Foldable t where
+  Data.Foldable.fold :: Monoid m => t m -> m
+  foldMap :: Monoid m => (a -> m) -> t a -> m
+  foldMap' :: Monoid m => (a -> m) -> t a -> m
+  foldr :: (a -> b -> b) -> b -> t a -> b
+  foldr' :: (a -> b -> b) -> b -> t a -> b
+  foldl :: (b -> a -> b) -> b -> t a -> b
+  foldl' :: (b -> a -> b) -> b -> t a -> b
+  ...
+  {-# MINIMAL foldMap | foldr #-}
+  	-- Defined in `Data.Foldable'
+```
+
+---
+
+### `[a]` as prime example
+```Haskell
+foldr :: (a -> b -> b) -> b -> [a] -> b
+foldr op val [] = val
+foldr op val (x:xs) = x `op` (foldr val xs)
+```
+```Haskell
+-- foldr op x [x1,...,xn] = 
+--    x1 `op` (x2 ... `op` (xn `op` x)...)
+```
+```Haskell
+foldl :: (b -> a -> b) -> b -> [a] -> b
+foldl op val [] = val
+foldl op val (x:xs) = foldl (val `op` x) xs
+```
+```Haskell
+-- foldl op x [x1,...,xn] = 
+--     (... ((x `op` x1) `op` x2) ... ) `op` xn
+```
+```Haskell
+>> foldl (+) 0 [0..10]
+55
+```
+
+---
+### `foldr` vs `foldl`
+* `foldr`: can work with infinite lists 
+  * initial value does not matter
+  * can lead to stackoverflow
+  * `foldr (:) [] xs == xs`
+* `foldl`: rarely used
+  * `foldl (flip (:)) [] xs == reverse xs`
+* `foldl'`: strict version 
+  * -> avoid stack overflow
+
+---
+### `foldr` use case
+
+```Haskell
+pickUntil0 = foldr pick [] where
+  0 `pick` _ = []
+  x `pick` acc = x : acc
+```
+```Haskell
+>> pickUntil0 $ [1, 2, 3, 0] ++ [1..]
+[1,2,3]
+```
+
+`foldl` will not work at all!
+```Haskell
+pickUntil0' = foldl pick [] where
+  _ `pick` 0 = []
+  acc `pick` x = x : acc
+```
+```Haskell
+>> pickUntil0' $ [1, 2, 3]
+[3,2,1]
+>> pickUntil0' [1, 2, 3, 0, 4, 5, 6]
+[6,5,4]
+>> pickUntil0' [0..]
+-- ...
+```
+
+---
+### `foldl'` use case
+```Haskell
+>> foldl' max 0 [1..10^8]
+100000000
+-- (2.02 secs, 7,200,109,176 bytes)
+```
+```Haskell
+>> foldr max 0 [1..10^8]
+-- *** Exception: stack overflow (but rather fast)
+```
+```Haskell
+>> foldl max 0 [1..10^8]
+-- *** Exception: stack overflow (and slow)
+```
+
+---
+### `foldl` use case
+```Haskell
+lazyMul :: Int -> Int -> Int
+_ `lazyMul` 0 = 0
+x `lazyMul` y = x * y
+```
+```Haskell
+>> foldl lazyMul 1 [2,3,undefined,5,0,3]
+0 
+```
+```Haskell
+>> foldl' lazyMul 1 [2,3,undefined,5,0,3]
+-- *** Exception: Prelude.undefined
+```
+---
+### General foldable
+* Behaves like a *stream*
+* `toList`, `length`, `elem`, `maximum`, `and`, `any`, ...
+* `Traversable`...
 
