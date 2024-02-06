@@ -92,7 +92,7 @@ and
 ... such that `$\forall f : a \to b $`
 `$$ \phi_b \circ F(f) = G(f) \circ \phi_a$$`
 
-<img alt="Diagram" src="pics/NaturalTransformation.svg" width="50%"/>
+<img alt="Diagram" src="src/pics/NaturalTransformation.svg" width="50%"/>
 ---
 
 In terms of Haskell:
@@ -255,7 +255,7 @@ class Monoidal t => Applicative t where
 
 such that
 
-<img alt="Monoid" src="pics/MonoidObject.svg" width="70%"/>
+<img alt="Monoid" src="src/pics/MonoidObject.svg" width="70%"/>
 
 ---
 
