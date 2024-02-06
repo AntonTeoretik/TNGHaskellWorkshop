@@ -93,20 +93,55 @@ uncurry f (x, y) = f x y
 
 ---
 
-### Lists
+### Ranges
 ```haskell
 >> [1..10]
 [1,2,3,4,5,6,7,8,9,10]
 ```
 ```haskell
->> [1,3..11]
-[1,3,5,7,9,11]
+>> [1,3..10]
+[1,3,5,7,9]
 ```
 ```haskell
 >> [1..] -- [1, 2, 3, ...]
 -- try it, Ctrl+C for abort.
 -- don't try with SublimeREPL!
 ```
+```haskell
+>> ['a'..'z']
+"abcdefghijklmnopqrstuvwxyz"
+```
+```haskell
+>> [1.0,1.1..1.5] :: [Float]
+[1.0,1.1,1.2,1.3000001,1.4000001,1.5000001]
+```
+```haskell
+>> take 5 $ [0.1,0.2,..]
+[0.1,0.2,0.30000000000000004,0.4,0.5]
+```
+
+---
+### List comprehension
+```Haskell
+>> [x^2 | x <- [1..10]]
+[1,4,9,16,25,36,49,64,81,100]
+```
+```Haskell
+-- multiple generators
+>> [(x, y) | x <- [1..3], y <- [1..x]]
+(1,1),(2,1),(2,2),(3,1),(3,2),(3,3)]
+```
+```Haskell
+-- assign lokas "variable"
+>> [(x,k) | x <- [1..3], let k = x^2]
+[(1,1),(2,4),(3,9)]
+```
+```Haskell
+-- can use boolean guards
+>> [x | x <- [1..10], sin x > 0.5]
+[1.0,2.0,7.0,8.0]
+```
+
 
 ---
 

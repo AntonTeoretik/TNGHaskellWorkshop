@@ -7,8 +7,14 @@ First steps:
 * Clone the repository with exercises.
 * run `stack run` in the project folder and see the welcome message.
 * run `stack test` and verify that every test except 1 fail.
-* run `stack ghci` to enter the REPL mode. Try something like `2 + 2`. Type `:q` to exit.
+* run `stack ghci` to enter the REPL mode. Try something like `2 + 2`. Type `:q` to quit.
 
+## IDEs
+
+* `VSCode` + `Haskell` and `Haskell Syntax Highlighting` extensions. Requires haskell language server.
+* `Sublime Text 3` + `SublimeHaskell`, `SublimeREPL` and `LSP` extensions. `LSP` courses periodical crashes though. 
+* `IntelliJ` + `IntelliJ-Haskell` plugin. Didn't work for me very well, the plugin is super unstable.
+* `Vim` + ???. Whoever know how to use vim (not me) may find this as the most convenient option
 
 ## Links and tools
 
