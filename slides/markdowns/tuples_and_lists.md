@@ -42,6 +42,27 @@ fst :: (a, b) -> a
 >> :t snd
 snd :: (a, b) -> b
 ```
+
+---
+### `@` in pattern matching
+```Haskell
+flipAndId :: (a, b) -> ( (a, b), (b, a) )
+flipAndId p@(x, y) = (p, (y, x))
+```
+Can be used for other complex types
+---
+
+### Curry and uncurry
+Function with 2 parameters ~ function of tuple
+```Haskell
+curry :: ((a, b) -> c) -> a -> b -> c
+curry f x y = f (x, y) 
+```
+```Haskell
+uncurry :: (a -> b -> c) -> (a, b) -> c
+uncurry f (x, y) = f x y 
+```
+
 ---
 
 ### Lists

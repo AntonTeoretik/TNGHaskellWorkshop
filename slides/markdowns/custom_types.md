@@ -208,6 +208,40 @@ MyPair String :: * -> * -- 1-parameric type!
 ```
 ---
 
+### `type`
+* `type` introduces a synonym for a type
+  * Same data constructors
+
+```Haskell
+type Name = String
+
+f :: Name -> String
+f = id -- ok
+```
+
+---
+### `newtype`
+
+* `newtype` is used for data with
+  * Exactly one constructor;
+  * Exactly one field inside it.
+* `newtype` = isomorphism.
+
+```Haskell
+-- ok
+newtype State s a = State { runState :: s -> (s, a) }
+-- NOT OK:
+-- newtype Pair a b = Pair { pairFst :: a, pairSnd :: b }
+```
+* Use if you need to implement some class instances.
+* No overhead! But useful for typechecks
+
+---
+
+## Some important types
+
+---
+
 ### Maybe
 ```Haskell
 data Maybe a = Nothing | Just a    
@@ -215,7 +249,7 @@ data Maybe a = Nothing | Just a
 ```Haskell
 findOdd :: [Integer] -> Maybe Integer
 findOdd [] = Nothing
-findOdd (x : xs) | x `mod` 2 == 0  = Just x
+findOdd (x : xs) | x `mod` 2 == 1  = Just x
                  | otherwise       = findOdd xs
 ```
 * "Same" as `Optional<T>` in Java
@@ -229,26 +263,26 @@ data Either a b = Left a | Right b
 ```
 ```Haskell
 findOdd :: Int -> [Integer] -> Either String Integer
-findOdd _ [] = Left "There is no odd numbers in the list"
+findOdd _ [] = Left "No odd numbers in the list"
 findOdd n (x : xs) | n < 0           = Left "Maximum depth reached"
-                   | x `mod` 2 == 0  = Right x
-                   | otherwise       = findOddSafe (n-1) xs
+                   | x `mod` 2 == 1  = Right x
+                   | otherwise       = findOdd (n-1) xs
 ```
 ```Haskell
->> findOdd 100 [1,3..]
+>> findEven 100 [2,4..]
 Left "Maximum depth reached"
 
->> findOdd 100 [1,3..50]
-Left "There is no odd numbers in the list"
+>> findOdd 100 [2,4..50]
+Left "No odd numbers in the list"
 
->> findOdd 100 $ [1,2,3]
-Right 2
+>> findOdd 100 $ [2,3,4]
+Right 3
 ```
 
 ---
 
 ### `->`
-*  `->` is a type constructor!
+... is a type constructor!
 
 ```Haskell
 >> :k (->)

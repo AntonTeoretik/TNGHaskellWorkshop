@@ -11,8 +11,8 @@ class Functor t where
 ```
 ```Haskell
 -- plus axioms!
-fmap id = id
-fmap (f . g) = fmap f . fmap g
+1. fmap id = id
+2. fmap (f . g) = fmap f . fmap g
 ```
 
 * `t` must be a 1-parametric type (`* -> *`)
@@ -46,7 +46,7 @@ instance Functor IO -- Defined in `GHC.Base'
 fmap :: (a -> b) -> [a] -> [b]
 ```
 
-* Same as `map`!
+Same as `map`!
 
 ```Haskell
 instance Functor [] where

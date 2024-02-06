@@ -112,7 +112,7 @@ True
 * `f x y z` stands for `f(x, y, z)`
 * All functions are pure (same arguments -> always same result)
   * except some magic (IO) 
-* function with 0 parameters = constants
+* function with 0 parameters = constant
 
 ```Haskell
 -- floor a, sqrt a, max a b, min a b, ...

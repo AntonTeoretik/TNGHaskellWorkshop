@@ -54,15 +54,15 @@ infixl 5 #
 
 class Group a where
   (#) :: a -> a -> a
-  invert  :: a -> a
+  inverse  :: a -> a
   neutral :: a
 
 -- Group axioms:
 -- x # y # z = (x # y) # z = x # (y # z)
 -- neutral # x == x
 -- x # neutral == x
--- x # (invert x) == neutral
--- (invert x) # x == neutral
+-- x # (inverse x) == neutral
+-- (inverse x) # x == neutral
 ```
 
 * ~ to traits in Rust
@@ -77,20 +77,20 @@ infixl 5 #
 
 class Group a where
   (#) :: a -> a -> a
-  invert  :: a -> a
+  inverse  :: a -> a
   neutral :: a
 ```
 
 ```Haskell
 instance Group Integer where
   neutral = 0
-  invert = negate
+  inverse = negate
   (#) = (+)
 ```
 ```Haskell
 >> 1 # 4
 5
->> invert 4
+>> inverse 4
 -4
 >> neutral :: Integer
 0
@@ -105,19 +105,19 @@ infixl 5 #
 
 class Group a where
   (#) :: a -> a -> a
-  invert  :: a -> a
+  inverse  :: a -> a
   neutral :: a
 ```
 ```Haskell
 instance Group () where
   neutral = ()
-  invert = id
+  inverse = id
   () # () = ()
 ```
 ```Haskell
 >> () # ()
 ()
->> invert ()
+>> inverse ()
 ()
 >> neutral :: ()
 ()
@@ -132,13 +132,13 @@ infixl 5 #
 
 class Group a where
   (#) :: a -> a -> a
-  invert  :: a -> a
+  inverse  :: a -> a
   neutral :: a
 ```
 ```Haskell
 instance (Group a, Group b) => Group (a, b) where
   (x1, y1) # (x2, y2) = (x1 # x2, y1 # y2)
-  invert (x1, y1) = (invert x1, invert y1)
+  inverse (x1, y1) = (inverse x1, inverse y1)
   neutral = (neutral, neutral)
 ```
 ```Haskell
@@ -190,7 +190,7 @@ class Eq a where
 instance Eq Bool where
   True == True = True
   False == False = True
-  _ == _  = False
+  _ == _  = False 
 ```
 * No need to implement all functions if they have default implementations
 * `MINIMAL` is pragma
@@ -239,6 +239,7 @@ instance Semigroup a => Monoid (Maybe a) where
   mempty = Nothing
   (Just x) <> (Just y) = Just (x <> y)
   x <> Nothing = x
+  Nothing <> x = x
 ```
 ```Haskell
 instance Monoid b => Monoid (a -> b) where
@@ -255,7 +256,7 @@ instance Monoid (a -> a) where
   mempty = id
   (<>) = (.)
 ```
-needs wrapper: `End`
+needs wrapper: `Endo`
 ```Haskell
 newtype Endo a = Endo { appEndo :: a -> a }
 ```
@@ -266,7 +267,7 @@ newtype Endo a = Endo { appEndo :: a -> a }
 Allows to "fold" the whole structure into one element with given binary operation
 ```Haskell
 class Foldable t where
-  Data.Foldable.fold :: Monoid m => t m -> m
+  fold :: Monoid m => t m -> m
   foldMap :: Monoid m => (a -> m) -> t a -> m
   foldMap' :: Monoid m => (a -> m) -> t a -> m
   foldr :: (a -> b -> b) -> b -> t a -> b
@@ -348,7 +349,6 @@ pickUntil0' = foldl pick [] where
 ```Haskell
 >> foldl' max 0 [1..10^8]
 100000000
--- (2.02 secs, 7,200,109,176 bytes)
 ```
 ```Haskell
 >> foldr max 0 [1..10^8]

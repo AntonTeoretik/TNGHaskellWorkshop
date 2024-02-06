@@ -29,7 +29,7 @@ True :: Bool
 Bool = {True, False}
 Char = {'a', 'b', 'c', ...}
 Integer = {..., -1, 0, 1, 2, ...} -- potentially infinite
-Int = { -2^29, ... 2^29-1 } -- depende on system, efficient
+Int = { -2^29, ... 2^29-1 } -- depends on system, efficient
 ```
 
 ---
