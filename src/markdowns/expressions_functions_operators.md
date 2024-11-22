@@ -52,7 +52,7 @@ True
 ---
 
 ### if then else
-`if (boolean expr) else (expr 1) then (expr 2)`
+`if (boolean expr) then (expr 1) else (expr 2)`
 
 * `expr1` and `expr2` must be of the same *type*
 
