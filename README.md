@@ -5,7 +5,8 @@ Prerequisites: interest to some abstract nonsense.
 First steps:
 * [Install stack](#how-to-install-stack)
 * Clone the repository with exercises.
-* run `stack run` in the project folder and see the welcome message.
+* run `stack build` in the project folder. It might take long time when do it the first time, since it need to download all the dependencies.
+* run `stack run` and see the welcome message.
 * run `stack test` and verify that every test except 1 fail.
 * run `stack ghci` to enter the REPL mode. Try something like `2 + 2`. Type `:q` to quit.
 
@@ -63,7 +64,7 @@ If you have **Linux** or **Windows and the user folder does not contain spaces**
 
 If you have Windows and your user folder contains spaces:
 1. May the gods help you.
-2. Option 1: rename your user folder using [instruction in the end](#how-to-change-user-folder) and follow previous steps. 
+2. Option 1: rename your user folder using the [instruction in the end](#how-to-change-user-folder) and follow general use case steps. 
 3. Option 2 (limited installation):
    * Install `stack` using https://get.haskellstack.org/stable/windows-x86_64-installer.exe.
    * It should install stack to `C:\sr`.
