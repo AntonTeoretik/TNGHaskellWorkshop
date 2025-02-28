@@ -1,288 +1,176 @@
 # Custom types
-
 ---
 
-### General idea
-
+### General pattern
 * Type = set.
 * Define type = define **data constructors**.
+* Use `data` keyword
+
+```Haskell
+data MyType  = Con1 T_1_1 ... T_1_m1            
+               | Con2 T_2_1 ... T_1_m2
+               ...
+               | Conn T_n_1 ... T_n_mn
+```
 
 ---
 
 ### Enum (sum type)
 ```Haskell
-data Color = Red | Green | Blue
-
-getColorCode :: Color -> String
-getColorCode Red = "#ff0000"
-getColorCode Green = "#00ff00"
-getColorCode Blue = "#0000ff"
+data MyType = Con1 | Con2 | Con3 | ... | Con_n
 ```
-```Haskell
->> getColorCode Red
-"#ff0000"
->> :t Red
-Red :: Color 
-```
-* `Red`, `Green`, `Blue` -- data constructors.
-* `Color` ≅ `*` ⊔ `*` ⊔ `*`
-
-
+* Contains exactly `n` values
+* `Con1`, `Con2`, ... -- data constructors
+* Use patten matching!
 
 ---
 
 ### Product type
+```haskell
+data MyType = Con T1 T2 .. Tn
 ```
-data Point2D = Pt2D Double Double
 
-dist :: Point2D -> Point2D -> Double
-dist (Pt2D x y) (Pt2D x' y') = sqrt $ (x - x')**2 + (y - y')**2
+* `Con` -- data constructor (often = `MyType`)
+* `|MyType|` = `|T1|`×`|T2|`× ... ×`|Tn|`
+* Elements of `MyType` are of the form 
+```haskell
+Con x1 x2 ... xn
 ```
+* `Con` is actually a function:
+```haskell
+Con :: T1 -> T2 -> ... -> Tn -> MyType
+```
+---
+
+### Record syntax
+* Named "getters" or "projections" of your structure
+
+```haskell
+data MyType = Con {
+  p_name_1 :: T1, 
+  p_name_2 :: T2,
+  ... 
+  p_name_n :: Tn
+}
+```
+```haskell
+p_name_i :: MyType -> Ti
+```
+* Useful for pattern matching
+
 ```Haskell
->> dist (Pt2D 0 0) (Pt2D 1 1)
-1.4142135623730951
->> :t Pt2D
-Pt2D :: Double -> Double -> Point2D 
+myFunc :: MyType -> a
+myFunc (Con {p_name_i = ..., p_name_j = ...}) = ...
 ```
+* Or creating new value from the old one
 
-* `Pt2D` -- data constructor.
-* `Point2D` ≅ `Double` × `Double`. 
-* *Warning*: all elements of `Point2D` are of the form `Pt2D x y`.
-* Ok to rename `Pt2D` to `Point2D`
+```haskell
+update :: MyType -> Ti -> MyType
+update p new_value = p {p_name_i = new_value}
+```
 
 ---
 
 ### Sum of products
-
 ```Haskell
-data Shape = Circle Double            
-           | Rectangle Double Double
+data MyType = Con_1 T_1_1 ... T_1_m1            
+            | Con_2 T_2_1 ... T_1_m2
+            ...
+            | Con_n T_n_1 ... T_n_mn
 ```
+* `Con1`, `Con2`, ... -- data constructors
 
-* `Shape` ≅ `Double` ⊔ `Double`  × `Double`
-* `Circle :: Double -> Shape`
-* `Rectangle :: Double -> Double -> Shape`
+```haskell
+Con_i :: T_i_1 -> T_i_2 -> ... -> T_i_mi -> MyType
+```
+```haskell
+|MyType| = |T_1_1|×...×|T_1_m1|+ ... + |T_n_1|×...×|T_n_mn|
+```
+* Some of `T_i_j` may be equal to `MyType`: recursive types!
 
 ---
 
-### General pattern
-
-```Haskell
-data TYPE_NAME = CON_1 TYPE1_1 ... TYPE1_m1            
-               | CON_2 TYPE2_1 ... TYPE1_m2
-               ...
-               | CON_n TYPEn_1 ... TYPEn_mn
+### Instance of typeclass
+```haskell
+instance Class Type where
+  method1 = ...
+  method2 = ...
 ```
 
-* Some of `TYPEi_j` may be equal to `TYPE_NAME`...
-
----
-
-### Recursive types
-
-```Haskell 
-data MyList = Nil 
-            | Elem Double MyList
-
-lenghtMyList :: MyList -> Integer
-lenghtMyList Nil = 0
-lenghtMyList (Elem _ ls) = 1 + lenghtMyList ls
+* enough to implement only methods from 
 ```
-```Haskell
->> lenghtMyList (Elem 2 $ Elem 4 $ Elem 8 Nil)
-3
+{-# MINIMAL ... #-}
 ```
+* use `deriving` for simple classes: `Eq`, `Show`, `Ord`
 
 ---
 
 ### Infix data constructor
 
 ```Haskell 
-infixr 5 :+
-data MyList = Nil
-            | (:+) Double MyList -- or "Double :+ MyList"
-  
-lenghtMyList :: MyList -> Integer
-lenghtMyList Nil = 0
-lenghtMyList (_ :+ ls) = 1 + lenghtMyList ls
+infixr n :++++
+data MyType = (:++++) T1 T2 .. TN
+            | ...
 ```
-```Haskell
->> lenghtMyList $ 1 :+ 2 :+ 3 :+ Nil
-3
-```
-
 * Must start with `:` . 
 * For usual lists `:` IS the infix data constructor.
 
 ---
 
-### Record syntax (named fields)
-
-```Haskell
-data Person = Person {
-    firstsName :: String,
-    lastName :: String,
-    age :: Int }
-  deriving (Show, Eq)
-```
-```Haskell  
->> let john = Person "John" "Smith" 21
->> firstName john
-"John"
-```
-```Haskell
->> let john = Person {age = 33, lastName = "Smith", 
-                           firstName = "John"} 
--- can change the order
-```
----
-
-### Record syntax (named fields)
-
-```Haskell
-data Person = Person {
-    firstsName :: String,
-    lastName :: String,
-    age :: Int }
-  deriving (Show, Eq)
-```
-```Haskell
-welcomeBill :: Person -> String
-welcomeBill ( Person {firstName = "Bill"} ) = "Welcome, Bill"
-welcomeBill _ = "You are not Bill".
-
->> let bill = Person "Bill" "Ivanov" 33
->> welcomeBill bill
-Person {firstName = "John", lastName = "Ivanov", age = 33}
-```
-```Haskell
-changeName :: String -> Person -> Person
-changeName new_name pers = pers {firstName = new_name} 
-
->> let bill = Person "Bill" "Ivanov" 17
->> changeName "John" bill
--- this will create NEW person, bill is still Bill.
-```
-
----
-
 ### Parametric types
-
 ```Haskell
-data Point2D a = -- 1 type parameter
-    Point2D a a
-  deriving (Show, Eq)
-
-data MyPair a b = -- 2 type parameters
-    MyPair a b
-  deriving (Show, Eq)
+data MyType a b ... z = 
+                 Con1 T_1_1 ... T_1_m1            
+               | Con2 T_2_1 ... T_1_m2
+               ...
+               | Con_n T_n_1 ... T_n_mn 
+-- T_i_j` are `a`-`z` (or concrete types)
 ```
+* `MyType` is a *type constructor*
+* `MyType T1 ... Tn` is a type
+* Parameters can be partially applied!
+  * `Either String` is 1-parametric type 
+* Use `:k` to get its *kind*
 ```Haskell
->> :t Point2D
-Point2D :: a -> a -> Point2D a -- "Point2D a" is a full type name 
->> :k Point2D
-Point2D :: * -> * 
-``` 
-```Haskell
->> :k MyPair
-MyPair :: * -> * -> *
+>> :k MyType
+MyType :: * -> * -> ... -> *
 ```
 
 ---
 
-### Type constructor
+### Instances for parametric types
 
-```Haskell
-data MyPair a b = MP a b
+```haskell
+data MyType a b ... z = ...
 
-```
-* `MyPair` is a *type constructor*
-* `:kind MyPair` is `* -> * -> *`
-* "Function" (transformation), which takes 2 type parameters and "returns" type
-
-```Haskell 
->> :k MyPair String Int
-MyPair String Int :: *
->> :k MyPair String
-MyPair String :: * -> * -- 1-parameric type!
-```
----
-
-### `type`
-* `type` introduces a synonym for a type
-  * Same data constructors
-
-```Haskell
-type Name = String
-
-f :: Name -> String
-f = id -- ok
+instance (constrains on a...z) => 
+  Class (MyType a b ... z) where
+  method1 = ...
+  method2 = ...
 ```
 
----
-### `newtype`
+where constrains on a...z are of the form
 
-* `newtype` is used for data with
-  * Exactly one constructor;
-  * Exactly one field inside it.
-* `newtype` = isomorphism.
-
-```Haskell
--- ok
-newtype State s a = State { runState :: s -> (s, a) }
--- NOT OK:
--- newtype Pair a b = Pair { pairFst :: a, pairSnd :: b }
-```
-* Use if you need to implement some class instances.
-* No overhead! But useful for typechecks
-
----
-
-## Some important types
-
----
-
-### Maybe
-```Haskell
-data Maybe a = Nothing | Just a    
-```
-```Haskell
-findOdd :: [Integer] -> Maybe Integer
-findOdd [] = Nothing
-findOdd (x : xs) | x `mod` 2 == 1  = Just x
-                 | otherwise       = findOdd xs
-```
-* "Same" as `Optional<T>` in Java
-* `Maybe Integer` is a type
-* `Maybe` is a **type constructor**
----
-
-### Either
-```Haskell
-data Either a b = Left a | Right b
-```
-```Haskell
-findOdd :: Int -> [Integer] -> Either String Integer
-findOdd _ [] = Left "No odd numbers in the list"
-findOdd n (x : xs) | n < 0           = Left "Maximum depth reached"
-                   | x `mod` 2 == 1  = Right x
-                   | otherwise       = findOdd (n-1) xs
-```
-```Haskell
->> findEven 100 [2,4..]
-Left "Maximum depth reached"
-
->> findOdd 100 [2,4..50]
-Left "No odd numbers in the list"
-
->> findOdd 100 $ [2,3,4]
-Right 3
+```haskell
+(Class1 i1, Class2 i2, ...)
 ```
 
 ---
 
-### `->`
-... is a type constructor!
+### Important parametric types
+```haskell
+Maybe :: * -> *
+Either :: * -> * -> *
+```
+```haskell
+[] :: * -> *
+```
+```haskell
+(,) :: * -> * -> *
+(,,) :: * -> * -> * -> *
+...
+```
+* `(->)` is a type constructor!
 
 ```Haskell
 >> :k (->)
@@ -292,4 +180,30 @@ Right 3
 >> :i (->)
 data (->) (a :: TYPE q) (b :: TYPE r) -- old version
 ```
+
+---
+
+### `type` and `newtype`
+* `type` introduces a synonym for a type
+  * Same data constructors
+
+```Haskell
+type T1 = T
+
+f :: T1 -> T
+f = id -- ok
+```
+
+* `newtype` is only for
+  * types with one constructor
+  * with exactly one parameter
+  * zero cost abstraction
+  
+```haskell
+newtype T1 = T1 T
+
+f :: T1 -> T
+f = id -- error
+```
+
 
