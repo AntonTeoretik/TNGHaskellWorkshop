@@ -6,17 +6,7 @@
 
 * Every expression has a type
 * Haskell can deduce the type by its own
-
-```haskell
->> :t 'c' 
-'c' :: Char
-
->> :t True 
-True :: Bool
-
->> :t 3 
-3 :: Num p => p --- ?!
-```
+* Use `:t` in `ghci` to see the type
 
 ---
 
@@ -34,6 +24,49 @@ Int = { -2^29, ... 2^29-1 } -- depends on system, efficient
 
 ---
 
+### Functional types
+
+* Functions also have types!
+```haskell
+>> :t (&&)
+(&&) :: Bool -> Bool -> Bool
+```
+* Function with two parameters = function with one parameter, 
+returning a function
+```Haskell 
+ a -> b -> c === a -> (b -> c)
+ a -> b -> c -> d === a -> (b -> (c -> d))
+```
+
+---
+
+### Partial application
+
+* Any function with `n` parameters can be applied partially 
+
+```haskell
+function :: a -> b -> c -> d
+
+function x :: b -> c -> d
+
+function x y :: c -> d
+
+function x y z :: d
+```
+
+---
+
+### Operator sectioning
+
+* Syntactic sugar for operators
+* `(x ***)` = `\y -> x *** y`
+* `(*** x)` = `\y -> y *** x`
+
+
+* `(-x)`  is a number! `(x-)` is a function.
+
+---
+
 ### Typeclasses
 
 ```haskell
@@ -43,22 +76,24 @@ Int = { -2^29, ... 2^29-1 } -- depends on system, efficient
 
 * `3` is a *polymorphic* constant. 
 * `Num p => ` -- context.
-* `Num` -- type class (~ interface in Java).
-  * Haskell does not know the exact type.
+* `Num` -- typeclass (~ traits in Rust or interfaces).
+  * Haskell does not know the exact type yet.
   * But knows the constraint.
-
+* Use `:: Type` to specify type explicitly
+* No implicit type conversions 
 
 ---
 
-### Typeclasses
+### Basic typeclasses
 
-* `Num`: basic operations `+`, `-`, `*`, `signum`, `fromInteger`.
-* `Fractional`: `/`.
-* `Integral`: `div`.
-* `Eq`: `==`, `/=`.
-* `Ord`: `<`, `>`, `<=`, `>=`.
-* `Show`: `show` (= to string).
-
+```Text
+* Eq:         ==, /= 
+* Ord:        <, >, <=, >= 
+* Num:        +, -, *, signum, fromInteger 
+* Fractional: /  
+* Integral:   div 
+* Show:       show (= to string) 
+```
 ```haskell
 Fractional ⊂ Num
 Integral ⊂ Num
@@ -67,134 +102,55 @@ Ord ⊂ Eq
 
 ---
 
-### Typeclasses
-
-```haskell
->> let x = 3 :: Integer
->> :t x 
-x :: Integer
-
->> let y = 7 :: Double
->> :t y 
-y :: Double
-
->> y
-7.0
-```
-```haskell
->> x + 7 -- ok
->> x + y -- forbidden! (`+` takes parameters of the same type)
-```
-
----
-
-### Functional types
-
-```haskell
->> :t not
-not :: Bool -> Bool
-
->> :t (&&)
-(&&) :: Bool -> Bool -> Bool
-```
-``` a -> b -> c === a -> (b -> c) ```
-
-A function with two parameters is the functions with one parameter, 
-which returns a function with one parameter
-
----
-
 ### Polymorphism
 
-* Many functions are polymorphic
-* Two types of polymorphism: parametric, ad-hoc
-
-```Haskell
->> :t id
-id :: a -> a
-
->> :t const
-const :: a -> b -> a
-```
-```Haskell
->> :t (+)
-(+) :: Num a => a -> a -> a
-
->> :t 3
-3 :: Num p => p
-```
+Two types of polymorphism:
+  * `parametric`: implementation is independent on the type
+  * `ad-hoc`: separate implementation for each type
 
 ---
 
 ### Parametric polymorphism
 
-* Implementation does not depend on the parameter type.
-
-```Haskell
+```haskell
 id :: a -> a 
-id x = x -- the only possible way to define such a function!
-```
-```Haskell
 const :: a -> b -> a
-const x _ = x
+flip :: (a -> b -> c) -> (b -> a -> c)
 ```
-```Haskell
-fst :: (a, b) -> a
-fst (x, y) = x
-```
-
-Assume `f :: a`. How it can be defined?
-
----
-
-#### Function application `$`
-
-* Function application (` `) is left-associative and has the highest priority (`10`).
-
-`f a b + c = ((f a) b) + c`
-* Operator `$` does the same, but the lowest priority (`0`) and right-associative.
-
 ```haskell
->> :t ($)
+undefined :: a
+```
+```haskell
+map :: (a -> b) -> [a] -> [b]
+filter :: (a -> Bool) -> [a] -> [a]
+head :: [a] -> a
+```
+```haskell
+(.) :: (b -> c) -> (a -> b) -> (a -> c)
+```
+```haskell
 ($) :: (a -> b) -> a -> b
->> show $ max 10 $ min 0 5
-
-"10"
--- same as show (max 10 (min 0 5))
 ```
-
----
-
-#### Strict function application `$!`
-
-* Same as `$`, but forces to evaluate expressions to WHNF.
 
 ```haskell
->> :t ($!)
-($!) :: (a -> b) -> a -> b
->> show $! max 10 $! min 0 5
-
-"10"
+curry :: ((a, b) -> c) -> a -> b -> c
+uncurry :: (a -> b -> c) -> (a, b) -> c
 ```
 
 ---
 
-#### Function composition `.`
-
+#### Operators `($)` and `(.)`
+* Low-priority function application `($)`
+```haskell
+infixr 0 $
+($) :: (a -> b) -> a -> b
+($) f x = f x
+```
+* Function composition `(.)`
 ```haskell
 infixr 9 .
 (.) :: (b -> c) -> (a -> b) -> a -> c
 (.) f g x = f (g x) 
---- So it takes two function and returns the function!
-```
-
-```haskell
->> floor ( (+ 2) ( (min 5) 4.9))
-6
->> floor $ (+ 2) $ (min 5) 4.9
-6
->> floor . (+ 2) . min 5 $ 4.9
-6
 ```
 
 ---
@@ -218,64 +174,44 @@ show :: Show a => a -> String
 ```
 
 * `Num a`, `Eq a`, `Show a` -- context
-* "`a` must be of *type class* `Num` (`Eq`, `Show`)"
+* "`a` must be an *instance* of of *typeclass* `Num` (`Eq`, `Show`)"
 
 ---
 
-### Types inference
-
-```Haskell
->> f x y = y + max x x
->> :t f
-f :: (Num a, Ord a) => a -> a -> a
+### Maybe
+```haskell
+data Maybe a = Just a | Nothing
 ```
-```Haskell
->> f' x y = y + max x x + (1 :: (Integral a => a))
->> :t f'
-f' :: (Integral a) => a -> a -> a
-
--- class (Real a, Enum a) => Integral a
--- class (Num a, Ord a) => Real a
-```
-
----
-
-### Partial application
+* `Maybe a` ~ `Optional<a>` in Java. 
+* Has a type parameter: `Maybe Bool` is a type, `Maybe` is not
+* Values are `(Just x)` or `Nothing`
 
 ```haskell
->> andTrue = (&&) True
->> :t andTrue
-andTrue :: Bool -> Bool
->> andTrue False
-False
-
->> relu = max 0
->> :t relu
-relu :: (Ord a, Num a) => a -> a
+Maybe Bool = {
+  Just True, 
+  Just False, 
+  Nothing :: Maybe Bool
+}
 ```
-
+* `Nothing` is different for different `a`
+* Use pattern matching!
 ---
-
-### Operator sectioning
-
-Syntactic sugar
+### Either
 
 ```haskell
->> square = (^2)
->> square 10
-100
-
->> exp2 = (2^)
->> exp2 10
-1024 
+data Either a b = Left a | Right b
 ```
+* 2 type parameters! 
+* `Either String Integer` is a type
+* Values are `(Left x)` or `(Right x)`
 
-`(-1)`  is a number! `(1-)` is a function.
-
-
-
-
-
-
-
-
+```haskell
+Either Bool Char = {
+  Left True, 
+  Left False,
+  Right 'a',
+  Right 'b',
+  Right 'c',
+  ...
+}
+```
