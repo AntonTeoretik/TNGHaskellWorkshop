@@ -139,7 +139,7 @@ uncurry :: (a -> b -> c) -> (a, b) -> c
 
 ---
 
-#### Operators `($)` and `(.)`
+### Operators `($)` and `(.)`
 * Low-priority function application `($)`
 ```haskell
 infixr 0 $

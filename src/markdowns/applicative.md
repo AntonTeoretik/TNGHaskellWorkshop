@@ -4,117 +4,151 @@
 
 ### Problem
 
-* `f :: a -> b -> c`
-* `fmap f :: f a -> f(b -> c)`
-* Want a way to lift function to 
-  
-`f a -> f b -> f c`
+* Functors "lift" functions of one argument
+```Haskell
+fmap   :: (a -> b)      -> (f a -> f b)
+```
+* Can we lift functions with multiple parameters?
+```Haskell
+liftA2 :: (a -> b -> c) -> (f a -> f b -> f c)
+```
+* Just `fmap` does not work:
+```Haskell
+fmap :: (a -> (b -> c)) -> f a -> f (b -> c)
+```
+
+* Can we transform 
+```Haskell 
+(<*>) :: f (b -> c) -> (f b -> f c)
+``` 
+  *naturally*?
 
 ---
-
 ### Applicative
 
 ```Haskell
 class Functor f => Applicative f where
-  pure :: a -> f a
-  (<*>) :: f (a -> b) -> f a -> f b -- infixl 4
-  liftA2 :: (a -> b -> c) -> f a -> f b -> f c
-  (*>) :: f a -> f b -> f b
-  (<*) :: f a -> f b -> f a
+  pure   :: a -> f a -- must pack value in "obvious" way
+
+  (<*>)  :: f (a -> b) -> (f a -> f b) -- infixl 4
+  
+  liftA2 :: (a -> b -> c) -> (f a -> f b -> f c)
+
+  -- + some convenience methods 
   {-# MINIMAL pure, ((<*>) | liftA2) #-}
 ```
+* We need some axioms here
+
+---
+### Applicative
+```Haskell
+class Functor f => Applicative f where
+  pure   :: a -> f a
+
+  (<*>)  :: f (a -> b) -> (f a -> f b) -- infixl 4
+  
+  liftA2 :: (a -> b -> c) -> (f a -> f b -> f c)
+
+  -- + some convenience methods 
+  {-# MINIMAL pure, ((<*>) | liftA2) #-}
+```
+* Define `<*>` => define `liftA2`
+
+```Haskell
+liftA2 f ax ay = f <$> ax <*> ay
+liftA2         = (.) (<*>) . (<$>)
+```
+* Define `liftA2` => define `<*>`
+
 ```Haskell
 (<*>) = liftA2 id
-liftA2 f ax ay = (fmap f) ax <*> ay 
- -- = f <$> ax <*> ay
 ```
-
 ---
 
 ### `Maybe` is Applicative
 ```Haskell
-pure = Just
+instance Applicative Maybe where
+    pure = Just
+
+    Just f  <*> Just x   = Just (f x)
+    _       <*> _        = Nothing
+
+    liftA2 f (Just x) (Just y) = Just (f x y)
+    liftA2 _ _         _       = Nothing
 ```
+
+* "Safe" execution -- if anything is `Nothing`, result is `Nothing`
+* `<*>` can be used for multiple parameters
+
 ```Haskell
->> liftA2 (+) (Just 2) (Just 3)
-Just 5
->> pure (+) <*> Just 2 <*> Just 3
-Just 5
+f a b c d = a + b + c + d
+
+>> Just f <*> Just 1 <*> Just 2 <*> Just 3 <*> Just 4
+-- Just 10
 ```
-```Haskell
->> pure (+) <*> Nothing <*> Just 3
-Nothing
->> Nothing <*> Just 2 <*> Just 3
-Nothing 
-```
+
 ---
 ### `Either e` is Applicative
 ```Haskell
->> pure (/) <*> Right 10.0 <*> Right 2.0
->> Right 5.0
+instance Applicative (Either e) where
+    pure          = Right
+    Left  e <*> _ = Left e
+    Right f <*> r = f <$> r
 ```
-```Haskell
->> pure (/) <*> Left "Some error" <*> Left "Other error"
->> Left "Some error"
-```
-
+* Stores the first error message in execution
 
 ---
 ### `[]` is Applicative
 ```Haskell
-pure x = [x]
+instance Applicative [] where
+    pure x         = [x]
+    fs <*> xs      = [f x | f <- fs, x <- xs]
+    liftA2 f xs ys = [f x y | x <- xs, y <- ys] 
+  -- list comprehension
+
+  -- | fs <*> xs <*> yx | = |fs| * |xs| * |yx|
 ```
-```Haskell
->> pure (+) <*> [1, 2] <*> [10, 20]
-[11, 21, 12, 22]
-```
-```Haskell
->> pure (+) <*> [1, 2] <*> [10, 20]
-[11, 21, 12, 22]
-```
-```Haskell
->> [(+), (*)] <*> [1, 2] <*> [10, 20]
-[11,21,12,22,10,20,20,40]
-```
+
+* Applies all functions to all combination of parameters
 
 ---
 ### `(,) a` is Applicative
-but only if `a` is Monoid
+but only if `a` is _Monoid_
+```Haskell
+class Monoid a where -- old way
+  (<>)   :: a -> a -> a -- must be associative
+  mempty :: a -- must be identity for (<>)
+--- prime example -- lists, (<>) is (++)
+```
 ```Haskell
 instance Monoid a => Applicative ((,) a) where
-  pure x = (mempty, x)
-  (u, f) <*> (v, x) = (u <> v, f x)
+  pure x                 = (mempty, x)
+  (u, f) <*> (v, x)      = (u <> v, f x)
   liftA2 f (u, x) (v, y) = (u <> v, f x y)
 ```
-```
->> ("(+) is applied to ", (+)) <*> (" 2 ", 2) <*> ("and 3", 3)
-("(+) is applied to  2 and 3",5)
-```
+* Stores "logs"
 
 ---
 ### `(->) e` is Applicative
-```Haskell
-instance Applicative ((->) r) where
-    pure = const
-    
-    (<*>) :: (r -> a -> b) -> (r -> a) -> (r -> b) 
-    (<*>) f g = \x -> (f x) (g x)
-    
-    liftA2 :: (a -> b -> c) -> (r -> a) -> (r -> b) -> (r -> c)
-    liftA2 q f g = \x -> q (f x) (g x)
-```
-```Haskell
-data Person = Person {
-    name :: String,
-    surname :: String
-  } deriving (Show, Eq)
 
-p :: Person
-p = Person "Harry " "Potter"
-```
 ```Haskell
->> pure (++) <*> name <*> surname $ p
-"Harry Potter"
+instance Applicative ((->) e) where
+    pure :: a -> (e -> a)
+    pure  = const
+    
+    (<*>)    :: (e -> (a -> b)) -> (e -> a) -> e -> b 
+    (<*>) f g = \e -> (f e) (g e)
+    
+    liftA2 :: (a -> b -> c) -> (e -> a) -> (e -> b) -> (e -> c)
+    liftA2 r_f r_a r_b = \e -> r_f (r_a r) (r_b r)
+```
+```md
+`e` is _context_ or _data source_
+
+`r_a :: e -> a` = read `a` from source `e`
+
+`(r_f <*> r_a) e` = 
+  read function `f`, read value `a` and apply `f` to `a`
 ```
 
 ---
@@ -123,19 +157,19 @@ p = Person "Harry " "Potter"
 
 ```Haskell
 -- Identity
- pure id <*> v = v
+ pure id <*> fa = fa
 ```
 ```Haskell
 -- Composition
- pure (.) <*> u <*> v <*> w = u <*> (v <*> w)
+ pure (.) <*> ff <*> fg <*> fa = ff <*> (fg <*> fa)
 ```
 ```Haskell
 -- Homomorphism
- pure f <*> pure x = pure (f x)
+ pure f <*> pure a = pure (f a)
 ```
 ```Haskell
 -- Interchange
- u <*> pure y = pure ($ y) <*> u
+ ff <*> pure a = pure ($ a) <*> ff
 ```
 
 

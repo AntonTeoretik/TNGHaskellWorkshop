@@ -9,7 +9,7 @@
 
 ```Haskell
 f :: a -> Maybe b      -- partially defined
-f :: a -> [b]          -- multivalued
+f :: a -> [b]          -- multi-valued
 f :: a -> (Either s) b -- can return typed "exception"
 f :: a -> (s, b)       -- write additional info
 f :: a -> ((->) e) b   -- read something from environment
@@ -17,53 +17,55 @@ f :: a -> IO b         -- communicate with real world
 ```
 ---
 
+### Problem
+* Can we "lift" those functions
+
+```Haskell
+???  :: (a -> m b) -> (m a -> m b)
+```
+* Compare to
+
+```Haskell
+fmap ::   (a -> b) -> (f a -> f b)
+<*>  :: f (a -> b) -> (f a -> f b)
+```
+
+* New operator: `>>=`
+
+---
+
 ### Effect accumulation
 
-```Hasklell 
+```Haskell 
 (>>=) :: m a -> (a -> m b) -> m b
 ```
 * `ma :: m a` -- value with effect
-* `f :: a -> m b` -- function with effect
+* `f :: a -> m b` -- function, producing effect
 * `ma >>= f` -- extract value, apply function, combine effects
 
----
-### Effect Accumulation example
-
 ```Haskell
-safeHead :: [a] -> Maybe a
-safeHead (x:_) = Just x
-safeHead [] = Nothing
-
-safeInverse :: Double -> Maybe Double
-safeInverse 0 = Nothing
-safeInverse x = Just $ 1 / x
-```
-
-```Haskell
->> Just [] >>= safeHead >>= safeInverse
-Nothing
->> Just [0.0] >>= safeHead >>= safeInverse
-Nothing
->> Just [4.0, 0.0] >>= safeHead >>= safeInverse
-Just 0.25
+:t flip (>>=)
+(a -> m b) -> (m a -> m b) 
 ```
 
 ---
 
-### Definition
+### Monad
 ```Haskell
 type Monad :: (* -> *) -> Constraint
 class Applicative m => Monad m where
-  (>>=) :: m a -> (a -> m b) -> m b
-  (>>) :: m a -> m b -> m b
+  (>>=) :: m a -> (a -> m b) -> m b -- binding
+  (>>) :: m a -> m b -> m b -- lighted binging
   return :: a -> m a
   {-# MINIMAL (>>=) #-}
--- return can be derived from Applicative  
 ```
+* We need some axioms
 
 ```Haskell
-return -- trivial way to pack value into container
-ma >> mb = ma >>= \_ -> mb -- forget ma, but preserve the effect
+return = pure
+-- trivial way to pack value into container
+ma >> mb = ma >>= const mb 
+-- forget ma, but preserve the effect
 ```
 
 ---
@@ -72,70 +74,61 @@ ma >> mb = ma >>= \_ -> mb -- forget ma, but preserve the effect
 
 ```Haskell
 instance  Monad Maybe  where
-    (Just x) >>= k = k x
-    Nothing  >>= _ = Nothing
+    (>>=) :: Maybe a -> (a -> Maybe b) -> Maybe b
+    (Just x) >>= f = f x 
+    -- if there is a value, take it and apply
+    Nothing  >>= _ = Nothing 
     
     return = Just
 ```
-```Haskell 
->> Just [] >>= safeHead >>= safeInverse
-Nothing
->> Just [0.0] >>= safeHead >>= safeInverse
-Nothing
->> Just [4.0, 0.0] >>= safeHead >>= safeInverse
-Just 0.25
-```
+
+* Safe execution
+* `>>=` is ~ flatmap for `Optional<T>` 
 
 ---
 
-#### `List` as monad
+#### `[]` as monad
 ```Haskell
 instance Monad []  where
-    [] >>= _ = []
+    (>>=) :: [a] -> (a -> [b]) -> [b]
+    []       >>= _ = []
     (x : xs) >>= f = f x ++ (xs >>= f)
             
     return a = [a]
 ```
-```Haskell
-foo :: Integer -> [Integer]
-foo x = [2*x, x]
-
-bar :: Integer -> [Integer]  
-bar x = [x-1, x, x+1]
-```
-```Haskell
->> (return 10) >>= foo >>= bar
-[19,20,21,9,10,11]
-```
+* Similar as `flatMap` for `Stream<T>` in Java
 ---
 
 #### `Either a` as monad
 ```Haskell
 instance Monad (Either e) where
-    Left  l >>= _ = Left l
-    Right r >>= k = k r
+    (>>=) :: Either e a -> (a -> Either e b) -> Either e b
+
+    Left  error >>= _ = Left error
+    Right r     >>= f = f r
     
     return = Right
 ```
-```Haskell
-safeInv :: Double -> Either String Double
-safeInv 0 = Left "Division by zero!"
-safeInv x = Right 1 / x
+* If there is an error -- keep it
+* If not -- take value, apply function
+* Similar to `try-catch`
 
-safeSqrt :: Double -> Either String Double
-safeSqrt x | x >= 0 = Right $ sqrt x
-           | otherwise = Left "Sqrt of negative!"
-```
+---
+
+
+### `(,) a` as monad (Writer)
+
 ```Haskell
->> (return 0) >>= safeInv >>= safeSqrt
-Left "Division by zero!"
->> (return (-0.5)) >>= safeInv >>= safeSqrt
-Left "Sqrt of negative!"
->> (return 4) >>= safeInv >>= safeSqrt
-Right 0.5
+instance Monoid d => Monad ((,) d) where
+  (>>=) :: (d, a) -> (a -> (d, b)) -> (d, b)
+  (old_message, a) >>= k = 
+    let (new_message, b) = k a in 
+      (old_message <> new_message, b)
+  return a = (mempty, a)
 ```
 
 ---
+* Each action adds additional information
 
 #### `(r -> )` as monad (Reader)
 
@@ -147,70 +140,32 @@ instance Monad ((->) r) where
   return :: a -> (r -> a)
   return a = \r -> a
 ```
-
-```Haskell
-showVal :: String -> Int -> String
-showVal str x = str ++ "Value: " ++ show x
-
-showDoubled :: String -> Int -> String
-showDoubled str x = str ++ ", and doubled is " ++ show (x * 2)
-```
-```Haskell
->>  (return "") >>= showVal >>= showDoubled $ 6
-"Value: 6, and doubled is 12"
->>  (return "Hi! ") >>= showVal >>= showDoubled $ 6
-"Hi! Value: 6, and doubled is 12"
-```
----
-
-#### `(,) a` as monad (Writer)
-
-```Haskell
-instance Monoid a => Monad ((,) a) where
-  (u, a) >>= k = case k a of (v, b) -> (u <> v, b)
-  return a = (mempty, a)
-```
-```Haskell
-addFive :: Integer -> (String, Integer)
-addFive x = ("Added 5; ", x + 5)
-
-isPositive :: Integer -> (String, Bool)
-isPositive x = ("Checked positivity; ", x > 0)
-```
-```Haskell
->> return 5 :: (String, Int)
-("",5)
->> ( return (-1) ) >>= addFive >>= isPositive  
-("Added 5; Checked positivity; ",True)
-```
+* r is data source (given after computation is defined)
+* `(a -> r -> b)` -- do something with `a`, in the context `r`
+* `fa >>= k` -- read `a` from the source and apply `k`
 
 ---
 
 ### Do-notation
+* Convenient syntax sugar for monadic computations
+
 ```Haskell
-hugeComputation = let i = 5 in
-  addFive i     >>= \x ->  -- x := i + 5 ;
-  addFive x     >>= \y ->  -- y := x + 2 ;
-  isPositive  y >>= \z ->  -- z = (y > 0) ;
-  return (x, y, z)         -- return (x, y, z)
+-- e1 >>= \p -> e2
+do 
+  p <- e1
+  e2
 ```
 ```Haskell
->> hugeComputation
-("Added 5; Added 5; Checked positivity; ",(10,15,True))
+-- let v = e1 in e2
+do 
+  let v = e1
+  e2
 ```
-```text
-e1 >>= \p -> e2   ---> do {p <- e1; e2}  
-let v = e1 in do  ---> do {let v = e1; e2}
-e1 >> e2          ---> do {e1; e2} 
-```
---- 
 ```Haskell
-hugeComputation' = do
-  let i = 5
-  x <- addFive i
-  y <- addFive x
-  z <- isPositive y
-  return (x, y, z)
+--- e1 >> e2
+do
+  e1
+  e2
 ```
 
 ---
@@ -248,6 +203,7 @@ instance Monad (State s) where
       fb = runState $ k a 
       (s', a) = runState sa $ s
 ```
+* State = Read + Write
 
 ---
 
@@ -258,15 +214,16 @@ newtype IO a = IO (RealWorld -> (RealWorld, a))
 
 * `RealWorld` is a "purely magical" type
 * Represents the state of real world
-* -> we can communicate with it
+* -> we can communicate with it!
 
 ```Haskell
-import System.Directory (getCurrentDirectory)
-
-main :: IO ()
-main = do
-  putStrLn "Now some text will be printed"
-  currentDir <- getCurrentDirectory
-  line <- readFile $ currentDir ++ "\\test.txt"
-  putStrLn ("Text in file: " ++ line)
+putStrLn :: String -> IO ()
+getLine :: IO String
+readFile :: FilePath -> IO String
+writeFile :: FilePath -> String -> IO ()
+...
 ```
+
+* `IO ()` -- "pure" side effect
+* `main :: IO ()`
+

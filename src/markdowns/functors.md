@@ -18,6 +18,7 @@ class Functor t where
 * `t` must be a 1-parametric type (`* -> *`)
 * Compiler can't check if axioms are fulfilled...
 * ... but uses them for optimization!
+* `(<$>)` == `fmap` 
 
 ---
 
@@ -36,19 +37,6 @@ instance Functor IO -- Defined in `GHC.Base'
 
 ### `[]` is a functor
 ```Haskell
->> fmap (==3) [1, 2, 3]
-[False,False,True]
-
->> fmap (+3) [1, 2, 3]
-[4,5,6]
-```
-```Haskell
-fmap :: (a -> b) -> [a] -> [b]
-```
-
-Same as `map`!
-
-```Haskell
 instance Functor [] where
     {-# INLINE fmap #-}
     fmap = map
@@ -59,22 +47,11 @@ map _ []     = []
 map f (x:xs) = f x : map f xs
 ```
 
----
-
 ### `Maybe` is a functor
 
 ```Haskell
->> fmap (+3) $ Just 3
-Just 6
-
->> fmap (+3) $ Nothing
-Nothing
-```
-```Haskell
-fmap :: (a -> b) -> Maybe a -> Maybe b
-```
-```Haskell
 instance  Functor Maybe  where
+    fmap :: (a -> b) -> Maybe a -> Maybe b
     fmap _ Nothing  = Nothing
     fmap f (Just a) = Just (f a)
 ```
@@ -82,57 +59,33 @@ instance  Functor Maybe  where
 ---
 
 ### `(,) a` is a functor
-
-```Haskell
->> fmap (+3) ("Something", 4)
-("Something", 7)
-```
-```Haskell
-fmap :: (b -> c) -> (a, b) -> (a, c)
-```
 ```Haskell
 instance Functor ((,) a) where
+  fmap :: (b -> c) -> (a, b) -> (a, c)
   fmap f (x,y) = (x, f y)
 ```
 
 ### `(,,) a b` is a functor
 
 ```Haskell
->> fmap (+3) ("Something", True, 4)
-("Something", True, 7)
-```
-```Haskell
 instance Functor ((,,) a b) where
+  fmap :: (c -> d) -> (a, b, c) -> (a, b, d)
   fmap f (x,y,z) = (x,y,f z)
 ```
-
 ---
 
 ### `Either e` is a functor
 
 ```Haskell
->> fmap (+3) $ Left "Something"
-Left "Something"
-
->> fmap (+3) $ Right 5
-Right 8
-```
-```Haskell
-fmap :: (a -> b) -> Either e a -> Either e b
-```
-```Haskell
 instance Functor (Either e) where
+  fmap :: (a -> b) -> Either e a -> Either e b
   fmap f (Left x) = Left x
   fmap f (Right x) = Right (f x)
 ```
 
----
-
 ### `r -> ` is a functor
 ```Haskell
-fmap :: (a -> b) -> (r -> a) -> (r -> b)
-```
-```Haskell
 instance Functor ((->) r) where
+  fmap :: (a -> b) -> ((->) r a) -> ((->) r b)
   fmap = (.)
 ```
