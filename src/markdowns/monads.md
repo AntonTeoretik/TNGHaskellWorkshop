@@ -177,10 +177,10 @@ f :: a -> s -> (s, b) -- effect = read state and return new one
 ```
 ```Haskell
 return :: a -> s -> (e, a)
-return a s = (e, a)
+return a s = (s, a)
 ```
 ```Haskell
-(>>=) :: (s -> (e, a)) -> (a -> s -> (e, b)) -> (s -> (e, b))
+(>>=) :: (s -> (s, a)) -> (a -> s -> (s, b)) -> (s -> (s, b))
 (>>=) fa k s = k a s' 
   where
     (s', a) = fa s
