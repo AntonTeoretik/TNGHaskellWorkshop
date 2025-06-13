@@ -8,9 +8,9 @@
 
 ```Haskell
 data MyType  = Con1 T_1_1 ... T_1_m1            
-               | Con2 T_2_1 ... T_1_m2
-               ...
-               | Conn T_n_1 ... T_n_mn
+             | Con2 T_2_1 ... T_1_m2
+             ...
+             | Conn T_n_1 ... T_n_mn
 ```
 
 ---
