@@ -127,8 +127,8 @@ instance Monoid d => Monad ((,) d) where
   return a = (mempty, a)
 ```
 
----
 * Each action adds additional information
+---
 
 #### `(r -> )` as monad (Reader)
 
